@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vem är personen?</title>
+<style>
+  :root {
+    --bg: #f2f2f2;
+    --card-bg: #ffffff;
+    --text: #222;
+    --clue-bg: #f5f5f5;
+    --muted: #777;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1a1a;
+      --card-bg: #2a2a2a;
+      --text: #f0f0f0;
+      --clue-bg: #333;
+      --muted: #aaa;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1a1a;
+    --card-bg: #2a2a2a;
+    --text: #f0f0f0;
+    --clue-bg: #333;
+    --muted: #aaa;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  .spel {
+    width: 100%;
+    max-width: 600px;
+    padding: 40px;
+    background: var(--card-bg);
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  h1 { margin-bottom: 30px; font-size: 1.6em; }
+  h2 { font-size: 1.2em; }
+
+  #ledtradNummer {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  #poang { font-size: 20px; font-weight: bold; }
+
+  #timer { font-size: 60px; font-weight: bold; margin: 20px; }
+
+  #ledtrad {
+    min-height: 100px;
+    padding: 25px;
+    margin: 30px 0;
+    background: var(--clue-bg);
+    border-radius: 15px;
+    font-size: 24px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  #feedback {
+    min-height: 24px;
+    font-weight: bold;
+    margin-top: -10px;
+    margin-bottom: 10px;
+  }
+  #feedback.fel { color: #e53935; }
+  #feedback.ratt { color: #43a047; }
+
+  button {
+    padding: 12px 24px;
+    margin: 8px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    color: white;
+    transition: transform 0.15s;
+  }
+  button:hover { transform: scale(1.05); }
+
+  #starta { background: #2196f3; }
+  #svara { background: #2196f3; }
+  #nyPerson { background: #4caf50; display: none; }
+
+  input {
+    padding: 12px;
+    margin: 10px;
+    font-size: 18px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    max-width: 200px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="spel">
+
+    <div id="instruktioner">
+      <h1>GISSA VEM PERSONEN ÄR?</h1>
+      <h2>Så fungerar spelet</h2>
+      <p>Du får fem ledtrådar för att lista ut personen.</p>
+      <p>Ju färre ledtrådar du behöver, desto fler poäng får du.</p>
+      <p>Du börjar på 5/5 poäng och tappar en poäng för varje ny ledtråd.</p>
+      <button id="starta">Starta spelet</button>
+    </div>
+
+    <div id="spelet" style="display: none;">
+      <h1>GISSA VEM PERSONEN ÄR?</h1>
+      <p id="ledtradNummer">LEDTRÅD 1 / 5</p>
+      <p id="poang">5 / 5</p>
+      <p id="timer">10</p>
+      <p id="ledtrad">Första ledtråden kommer här</p>
+      <div id="feedback"></div>
+      <button id="svara">Svara</button>
+      <button id="nyPerson">Ny person</button>
+      <div id="svarsfalt"></div>
+    </div>
+
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const personer = [
+    { ledtradar: ["Nya Gamla pojkar", "Frälsaren", "Rosario", "Katalonien", "Tio"], svar: "messi" },
+    { ledtradar: ["lejon från Padmé Amidalas hemplanet", "Stadio Diego Armando Maradona, Parc Olympique Lyonnais", "Korsika", "Waterloo", "Kejsare"], svar: "napoleon" },
+    { ledtradar: ["fruktarbetare", "Statens Järnvägar", "polotröja", "macka", "jobbig"], svar: "jobs" },
+    { ledtradar: ["la viola", "sexuddig stjärna", "marmor", "Leonardo da Vinci", "Sixtinska kapellet"], svar: "michelangelo" },
+    { ledtradar: ["lyckocirkel", "test", "mimare", "enigma", "dator"], svar: "turing" }
+  ];
+
+  function slumpaPerson() {
+    return personer[Math.floor(Math.random() * personer.length)];
+  }
+
+  let person = slumpaPerson();
+  let index = 0;
+  let timerHandle = null;
+  let tid = 10;
+
+  const el = (id) => document.getElementById(id);
+
+  function stoppaTimer() {
+    if (timerHandle !== null) {
+      clearInterval(timerHandle);
+      timerHandle = null;
+    }
+  }
+
+  function startaTimer() {
+    tid = 10;
+    el("timer").textContent = tid.toString();
+
+    timerHandle = setInterval(() => {
+      tid -= 1;
+      el("timer").textContent = tid.toString();
+
+      if (tid <= 0) {
+        stoppaTimer();
+        index += 1;
+        visaLedtrad();
+      }
+    }, 1000);
+  }
+
+  function visaLedtrad() {
+    stoppaTimer();
+    el("feedback").textContent = "";
+    el("feedback").className = "";
+
+    if (index < 5) {
+      el("ledtradNummer").textContent = `LEDTRÅD ${index + 1} / 5`;
+      el("poang").textContent = `${5 - index} / 5`;
+      el("ledtrad").textContent = person.ledtradar[index];
+      startaTimer();
+    } else {
+      slutPaLedtradar();
+    }
+  }
+
+  function slutPaLedtradar() {
+    stoppaTimer();
+    el("ledtrad").textContent = "Nu var det slut på ledtrådar!";
+    el("timer").textContent = "";
+    el("svara").style.display = "none";
+    el("nyPerson").style.display = "inline-block";
+  }
+
+  function visaSvarsfalt() {
+    el("svarsfalt").innerHTML = `
+      <input id="svar" type="text" placeholder="Efternamn">
+      <button id="skickaSvar">Svara</button>
+    `;
+    el("skickaSvar").addEventListener("click", svaraVemDetAr);
+    el("svar").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") svaraVemDetAr();
+    });
+  }
+
+  function svaraVemDetAr() {
+    const input = el("svar");
+    if (!input) return;
+    const svar = input.value.trim().toLowerCase();
+
+    if (svar === person.svar.toLowerCase()) {
+      stoppaTimer();
+      const poang = 5 - index;
+
+      el("feedback").textContent = "";
+      el("ledtrad").textContent = `Det är rätt!! Du fick ${poang}/5 möjliga poäng`;
+      el("timer").textContent = "";
+      el("svarsfalt").innerHTML = "";
+      el("svara").style.display = "none";
+      el("nyPerson").style.display = "inline-block";
+    } else {
+      el("feedback").textContent = "Fel svar! Försök igen!";
+      el("feedback").className = "fel";
+      input.value = "";
+      input.focus();
+    }
+  }
+
+  function startaNyPerson() {
+    stoppaTimer();
+    person = slumpaPerson();
+    index = 0;
+
+    el("svarsfalt").innerHTML = "";
+    el("feedback").textContent = "";
+    el("feedback").className = "";
+    el("nyPerson").style.display = "none";
+    el("svara").style.display = "inline-block";
+
+    visaLedtrad();
+  }
+
+  function startaSpel() {
+    el("instruktioner").style.display = "none";
+    el("spelet").style.display = "block";
+    index = 0;
+    visaLedtrad();
+  }
+
+  el("starta").addEventListener("click", startaSpel);
+  el("svara").addEventListener("click", visaSvarsfalt);
+  el("nyPerson").addEventListener("click", startaNyPerson);
+})();
+</script>
+</body>
+</html>
