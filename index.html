@@ -146,22 +146,117 @@
   </div>
 
 <script>
+// ============================================================
+// Spel: Vem är personen?
+// Öppna denna fil i VS Code. All spellogik (JS) och design (CSS)
+// finns i denna enda fil. Personerna/ledtrådarna redigerar du
+// längre ner i taggen "REDIGERA HÄR" (sök på det, ctrl/cmd+F).
+// När du sparat filen räcker det att ladda om sidan i webbläsaren.
+// ============================================================
 (function () {
   "use strict";
 
+  // ============================================================
+  // REDIGERA HÄR: lägg till, ta bort eller ändra personer.
+  //
+  // Varje person behöver:
+  //   - ledtradar: EXAKT 5 stycken, i ordning (visas en i taget)
+  //   - svar: rätt svar (versaler/gemener spelar ingen roll)
+  //
+  // Vill du lägga till en ny person? Kopiera ett block, ändra
+  // texterna och lägg till ett komma mellan blocken.
+  // ============================================================
   const personer = [
-    { ledtradar: ["Nya Gamla pojkar", "Frälsaren", "Rosario", "Katalonien", "Tio"], svar: "messi" },
-    { ledtradar: ["lejon från Padmé Amidalas hemplanet", "Stadio Diego Armando Maradona, Parc Olympique Lyonnais", "Korsika", "Waterloo", "Kejsare"], svar: "napoleon" },
-    { ledtradar: ["fruktarbetare", "Statens Järnvägar", "polotröja", "macka", "jobbig"], svar: "jobs" },
-    { ledtradar: ["la viola", "sexuddig stjärna", "marmor", "Leonardo da Vinci", "Sixtinska kapellet"], svar: "michelangelo" },
-    { ledtradar: ["lyckocirkel", "test", "mimare", "enigma", "dator"], svar: "turing" }
-  ];
 
-  function slumpaPerson() {
-    return personer[Math.floor(Math.random() * personer.length)];
+    {
+      ledtradar: [
+        "Nya Gamla pojkar",
+        "Frälsaren",
+        "Rosario",
+        "Katalonien",
+        "Tio"
+      ],
+      svar: "messi"
+    },
+
+    {
+      ledtradar: [
+        "lejon från Padmé Amidalas hemplanet",
+        "Stadio Diego Armando Maradona, Parc Olympique Lyonnais",
+        "Korsika",
+        "Waterloo",
+        "Kejsare"
+      ],
+      svar: "napoleon"
+    },
+
+    {
+      ledtradar: [
+        "fruktarbetare",
+        "Statens Järnvägar",
+        "polotröja",
+        "macka",
+        "jobbig"
+      ],
+      svar: "jobs"
+    },
+
+    {
+      ledtradar: [
+        "la viola",
+        "sexuddig stjärna",
+        "marmor",
+        "Leonardo da Vinci",
+        "Sixtinska kapellet"
+      ],
+      svar: "michelangelo"
+    },
+
+    {
+      ledtradar: [
+        "lyckocirkel",
+        "test",
+        "mimare",
+        "enigma",
+        "dator"
+      ],
+      svar: "turing"
+    }
+
+    // Lägg till fler personer här, samma format:
+    // {
+    //   ledtradar: ["ledtråd 1", "ledtråd 2", "ledtråd 3", "ledtråd 4", "ledtråd 5"],
+    //   svar: "namnet"
+    // }
+
+  ];
+  // ============================================================
+  // SLUT PÅ REDIGERBAR DEL
+  // ============================================================
+
+  // Blandad kö av personer. Fylls (och blandas) på nytt först när
+  // alla personer i den har använts en gång. Nollställs bara om
+  // sidan laddas om, så samma person kan inte dyka upp igen
+  // förrän alla andra har visats.
+  let personKo = [];
+
+  function blandaArray(arr) {
+    const kopia = [...arr];
+    for (let i = kopia.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [kopia[i], kopia[j]] = [kopia[j], kopia[i]];
+    }
+    return kopia;
   }
 
-  let person = slumpaPerson();
+  function nastaPerson() {
+    if (personKo.length === 0) {
+      personKo = blandaArray(personer);
+    }
+    return personKo.pop();
+  }
+
+  let person = nastaPerson();
   let index = 0;
   let timerHandle = null;
   let tid = 10;
@@ -250,7 +345,7 @@
 
   function startaNyPerson() {
     stoppaTimer();
-    person = slumpaPerson();
+    person = nastaPerson();
     index = 0;
 
     el("svarsfalt").innerHTML = "";
